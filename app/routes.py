@@ -1,5 +1,6 @@
 from flask import request, jsonify, make_response
-from .models import db, Materias, Municipios, TipoDocumentacion, Eps, Grados, Cursos
+from .models import db, Materias, Municipios, TipoDocumentacion, Eps, Grados, Cursos, RegistroPersona, \
+    AcudientesEstudiantes, MateriaCurso
 from . import app
 
 
@@ -427,3 +428,211 @@ def delete_curso(id_curso):
         return jsonify({'error': str(e)}), 500
 
 
+# CRUD para RegistroPersona
+
+# Crear un nuevo RegistroPersona
+@app.route('/app/create/registro_persona', methods=['POST'])
+def create_registro_persona():
+    data = request.json
+
+    if RegistroPersona.query.filter_by(ID_REGISTRO=data['id_registro']).first():
+        return make_response(jsonify({'message': 'Ya existe un Registro con este ID.'}), 400)
+
+    nuevo_registro_persona = RegistroPersona(ID_REGISTRO=data['id_registro'], ID_PERSONA_REGISTRO=data['id_persona_registro'], FECHA_VINCULACION_COLEGIO=data['fecha_vinculacion_colegio'], FECHA_DESVINCULACION_COLEGIO=data['fecha_desvinculacion_colegio'])
+    db.session.add(nuevo_registro_persona)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Registro creada exitosamente!'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Obtener todos los  Registro Persona
+@app.route('/app/get/registro_persona', methods=['GET'])
+def get_registro_persona():
+    registro_persona = RegistroPersona.query.all()
+    return jsonify([{'id_registro': rp.ID_REGISTRO, 'id_persona_registro': rp.ID_PERSONA_REGISTRO, 'fecha_vinculacion_colegio':rp.FECHA_VINCULACION_COLEGIO, 'fecha_desvinculacion_colegio':rp.FECHA_DESVINCULACION_COLEGIO} for rp in registro_persona])
+
+
+# Obtener un Cursos por Registro Persona
+@app.route('/app/get/registro_persona/<int:id_registro>', methods=['GET'])
+def get_registro_persona(id_registro):
+    registro_persona = RegistroPersona.query.get(id_registro)
+    if registro_persona:
+        return jsonify({'id_registro': registro_persona.ID_REGISTRO, 'id_persona_registro': registro_persona.ID_PERSONA_REGISTRO, registro_persona.FECHA_VINCULACION_COLEGIO:'fecha_vinculacion_colegio', registro_persona.FECHA_DESVINCULACION_COLEGIO:'fecha_desvinculacion_colegio'})
+    else:
+        return make_response(jsonify({'message': 'Registro de persona no encontrado!'}), 404)
+
+
+# Actualizar un  Registro Persona
+@app.route('/app/update/registro_persona/<int:id_registro>', methods=['PUT'])
+def update_registro_persona(id_registro):
+    registro_persona = RegistroPersona.query.get(id_registro)
+    if not registro_persona:
+        return make_response(jsonify({'message': 'Registro no encontrado!'}), 404)
+
+    data = request.json
+    registro_persona.FECHA_DESVINCULACION_COLEGIO = data['fecha_desvinculacion_colegio']
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Registro actualizada exitosamente!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Eliminar un Registro Persona
+@app.route('/app/delete/registro_persona/<int:id_registro>', methods=['DELETE'])
+def delete_registro_persona(id_registro):
+    registro_persona = RegistroPersona.query.get(id_registro)
+    if not registro_persona:
+        return make_response(jsonify({'message': 'Registro no encontrada!'}), 404)
+
+    try:
+        db.session.delete(registro_persona)
+        db.session.commit()
+        return jsonify({'message': 'Registro eliminada exitosamente!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# CRUD para Acudientes Estudiantes
+
+# Crear un nuevo Acudientes  Estudiantes
+@app.route('/app/create/acudiente_estudiante', methods=['POST'])
+def create_acudiente_estudiante():
+    data = request.json
+
+    if AcudientesEstudiantes.query.filter_by(ID_GRADO=data['id_curso']).first():
+        return make_response(jsonify({'message': 'Ya existe un Acudientes y Estudiantes con este ID.'}), 400)
+
+    nuevo_acudiente_estudiante = AcudientesEstudiantes(ID_ACUDIENTE=data['PERSONAS.Id_persona'], ID_ESTUDIANTE=data['PERSONAS.Id_persona'])
+    db.session.add(nuevo_acudiente_estudiante)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Curso Acudientes y Estudiantes exitosamente!'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Obtener todos los  Acudientes  Estudiantes
+@app.route('/app/get/acudiente_estudiante', methods=['GET'])
+def get_acudiente_estudiante():
+    acudiente_estudiante = AcudientesEstudiantes.query.all()
+    return jsonify([{'PERSONAS.Id_persona': ac.ID_ACUDIENTE, 'PERSONAS.Id_persona': ac.ID_ESTUDIANTE} for ac in acudiente_estudiante])
+
+
+# Obtener un Acudientes  Estudiantes por ID pendiente
+@app.route('/app/get/acudiente_estudiante/<int:id_curso>', methods=['GET'])
+def get_acudiente_estudiante(id_curso):
+    curso = Cursos.query.get(id_curso)
+    if curso:
+        return jsonify({'id_curso': curso.ID_CURSO, 'id_grado_curso': curso.ID_GRADO_CURSO, curso.NOMBRE_CURSO:'nombre_curso'})
+    else:
+        return make_response(jsonify({'message': 'Curso no encontrado!'}), 404)
+
+
+# Actualizar un Acudientes  Estudiantes Pendiente
+@app.route('/app/update/acudiente_estudiante/<int:id_curso>', methods=['PUT'])
+def update_acudiente_estudiante(id_curso):
+    curso = Cursos.query.get(id_curso)
+    if not curso:
+        return make_response(jsonify({'message': 'Curso no encontrado!'}), 404)
+
+    data = request.json
+    curso.NOMBRE_CURSO = data['nombre_curso']
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Curso actualizada exitosamente!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Eliminar un  Acudientes  Estudiantes Pendiente
+@app.route('/app/delete/acudiente_estudiante/<int:id_curso>', methods=['DELETE'])
+def delete_acudiente_estudiante(id_curso):
+    curso = Cursos.query.get(id_curso)
+    if not curso:
+        return make_response(jsonify({'message': 'Curso no encontrada!'}), 404)
+
+    try:
+        db.session.delete(curso)
+        db.session.commit()
+        return jsonify({'message': 'Cursos eliminada exitosamente!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# CRUD para MateriaCurso
+
+# Crear un nuevo MateriaCurso
+@app.route('/app/create/materia_curso', methods=['POST'])
+def create_materia_curso():
+    data = request.json
+
+    if MateriaCurso.query.filter_by(ID_MATERIA_CURSO=data['id_materia_curso']).first():
+        return make_response(jsonify({'message': 'Ya existe una materia curso con este ID.'}), 400)
+
+    nuevo_materia_curso = MateriaCurso(ID_MATERIA_CURSO=data['id_materia_curso'], ID_CURSO=data['CURSOS.id_curso'], ID_MATERIA=data['MATERIAS.id_materia'], ID_PERSONA=data['PERSONAS.id_persona'])
+    db.session.add(nuevo_materia_curso)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Registro creada exitosamente!'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Obtener todos los  MateriaCurso
+@app.route('/app/get/materia_curso', methods=['GET'])
+def get_materia_curso():
+    materia_curso = MateriaCurso.query.all()
+    return jsonify([{'id_materia_curso': mc.ID_MATERIA_CURSO, 'CURSOS.id_curso': mc.ID_CURSO, 'MATERIAS.id_materia':mc.ID_MATERIA, 'PERSONAS.id_persona':mc.ID_PERSONA} for mc in materia_curso])
+
+
+# Obtener un Cursos por id MateriaCurso
+@app.route('/app/get/materia_curso/<int:id_materia_curso>', methods=['GET'])
+def get_materia_curso(id_materia_curso):
+    materia_curso = MateriaCurso.query.get(id_materia_curso)
+    if materia_curso:
+        return jsonify({'id_materia_curso': materia_curso.ID_MATERIA_CURSO, 'CURSOS.id_curso': materia_curso.ID_CURSO, materia_curso.ID_MATERIA:'MATERIAS.id_materia', materia_curso.ID_PERSONA:'PERSONAS.id_persona'})
+    else:
+        return make_response(jsonify({'message': 'Registro de Materia Curso no encontrado!'}), 404)
+
+
+# Actualizar un MateriaCurso
+@app.route('/app/update/materia_curso/<int:id_materia_curso>', methods=['PUT'])
+def update_materia_curso(id_materia_curso):
+    materia_curso = MateriaCurso.query.get(id_materia_curso)
+    if not materia_curso:
+        return make_response(jsonify({'message': 'Registro no encontrado!'}), 404)
+
+    data = request.json
+    #no se si es valido ya que afectaria las llaves como tal y logicame
+    materia_curso.ID_PERSONA = data['Id modificado ']
+    try:
+        db.session.commit()
+        return jsonify({'message': 'MateriaCurso actualizada exitosamente!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Eliminar un Registro Persona
+@app.route('/app/delete/materia_curso/<int:id_materia_curso>', methods=['DELETE'])
+def delete_materia_curso(id_materia_curso):
+    materia_curso = MateriaCurso.query.get(id_materia_curso)
+    if not materia_curso:
+        return make_response(jsonify({'message': 'Registro no encontrada!'}), 404)
+
+    try:
+        db.session.delete(materia_curso)
+        db.session.commit()
+        return jsonify({'message': 'Registro eliminada exitosamente!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
